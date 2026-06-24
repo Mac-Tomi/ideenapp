@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>IdeenApp</title>
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IdeenApp">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23667eea'/><text x='50' y='65' font-size='60' text-anchor='middle'>💡</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#667eea;--primary-dark:#5a67d8;--gradient:linear-gradient(135deg,#667eea 0%,#764ba2 100%);--red:#ef4444;--yellow:#f59e0b;--green:#10b981;--bg:#f3f4f6;--card:#fff;--text:#1f2937;--text-secondary:#6b7280;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+header{background:var(--gradient);color:#fff;padding:20px 16px 16px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-lg)}
+header .top{display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.settings-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.settings-btn:hover{background:rgba(255,255,255,.35)}
+.input-section{padding:16px;max-width:700px;margin:0 auto}
+.input-card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.input-card textarea{width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:12px;font-size:1rem;font-family:inherit;resize:vertical;min-height:80px;transition:border-color .2s;outline:none}
+.input-card textarea:focus{border-color:var(--primary)}
+.input-card textarea::placeholder{color:#9ca3af}
+.input-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.author-select{flex:1;min-width:120px;padding:10px 12px;border:2px solid #e5e7eb;border-radius:8px;font-size:.95rem;background:#fff;cursor:pointer;outline:none;transition:border-color .2s}
+.author-select:focus{border-color:var(--primary)}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-primary{background:var(--gradient);color:#fff;box-shadow:0 2px 8px rgba(102,126,234,.4)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(102,126,234,.5)}
+.btn-primary:active{transform:translateY(0)}
+.btn-voice{background:#fff;border:2px solid #e5e7eb;color:var(--text);width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;border-radius:50%;flex-shrink:0}
+.btn-voice.recording{background:var(--red);border-color:var(--red);color:#fff;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+.filters{padding:8px 16px;max-width:700px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;border:2px solid #e5e7eb;background:#fff;font-size:.85rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .2s;color:var(--text-secondary)}
+.filter-chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.filter-chip.author-chip.active{background:#764ba2;border-color:#764ba2;color:#fff}
+.filter-divider{width:1px;background:#d1d5db;margin:4px 2px;flex-shrink:0}
+.ideas-list{padding:8px 16px 100px;max-width:700px;margin:0 auto}
+.idea-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border-left:4px solid;transition:all .2s;position:relative}
+.idea-card:hover{box-shadow:var(--shadow-lg)}
+.idea-card[data-status="offen"]{border-left-color:var(--red)}
+.idea-card[data-status="in Bearbeitung"]{border-left-color:var(--yellow)}
+.idea-card[data-status="erledigt"]{border-left-color:var(--green)}
+.idea-text{font-size:1rem;line-height:1.5;margin-bottom:10px;word-break:break-word;white-space:pre-wrap}
+.idea-meta{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text-secondary);margin-bottom:12px;flex-wrap:wrap}
+.idea-author{font-weight:600}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600;color:#fff}
+.status-badge.offen{background:var(--red)}
+.status-badge.in-bearbeitung{background:var(--yellow);color:#92400e}
+.status-badge.erledigt{background:var(--green)}
+.idea-actions{display:flex;gap:6px;flex-wrap:wrap}
+.idea-actions .btn{padding:6px 12px;font-size:.8rem;font-weight:500;border-radius:6px;background:#f3f4f6;color:var(--text-secondary)}
+.idea-actions .btn:hover{background:#e5e7eb;color:var(--text)}
+.idea-actions .btn-delete:hover{background:#fee2e2;color:var(--red)}
+.idea-actions .btn-ai{background:#f0e6ff;color:#7c3aed}
+.idea-actions .btn-ai:hover{background:#e4d5fa}
+.idea-actions .btn-ai.loading{opacity:.6;pointer-events:none}
+.evaluation{margin-top:12px;padding:12px;background:#f8f5ff;border-radius:8px;border:1px solid #e4d5fa;font-size:.9rem;line-height:1.6;white-space:pre-wrap;position:relative}
+.evaluation-header{font-weight:600;color:#7c3aed;margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:.85rem}
+.evaluation .close-eval{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem}
+.evaluation .close-eval:hover{color:var(--text)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}
+.empty-state p{font-size:1.1rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;visibility:hidden;transition:all .2s}
+.modal-overlay.active{opacity:1;visibility:visible}
+.modal{background:var(--card);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;box-shadow:var(--shadow-lg);transform:scale(.95);transition:transform .2s}
+.modal-overlay.active .modal{transform:scale(1)}
+.modal h2{font-size:1.2rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.modal textarea{width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:12px;font-size:1rem;font-family:inherit;resize:vertical;min-height:100px;outline:none;transition:border-color .2s}
+.modal textarea:focus{border-color:var(--primary)}
+.modal .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.modal .btn-cancel{background:#f3f4f6;color:var(--text-secondary)}
+.modal .btn-cancel:hover{background:#e5e7eb}
+.modal .btn-danger{background:var(--red);color:#fff}
+.modal .btn-danger:hover{background:#dc2626}
+.modal label{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--text-secondary)}
+.modal input[type="password"],.modal input[type="text"]{width:100%;border:2px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:.95rem;outline:none;transition:border-color .2s;font-family:inherit}
+.modal input:focus{border-color:var(--primary)}
+.modal .hint{font-size:.8rem;color:var(--text-secondary);margin-top:6px}
+.status-select-group{display:flex;gap:6px;margin-bottom:16px}
+.status-option{flex:1;padding:8px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;text-align:center;font-size:.85rem;font-weight:500;transition:all .2s}
+.status-option:hover{border-color:#d1d5db}
+.status-option.selected.offen{border-color:var(--red);background:#fef2f2;color:var(--red)}
+.status-option.selected.in-bearbeitung{border-color:var(--yellow);background:#fffbeb;color:#92400e}
+.status-option.selected.erledigt{border-color:var(--green);background:#ecfdf5;color:var(--green)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1f2937;color:#fff;padding:12px 24px;border-radius:10px;font-size:.9rem;font-weight:500;z-index:300;transition:transform .3s ease;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--red)}
+.toast.success{background:var(--green)}
+.count-badge{background:rgba(255,255,255,.25);padding:2px 8px;border-radius:10px;font-size:.8rem;margin-left:4px}
+@media(max-width:400px){.input-controls{flex-direction:column}.author-select,.btn-primary{width:100%}.btn-primary{justify-content:center}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <h1>💡 IdeenApp</h1>
+    <button class="settings-btn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+  </div>
+</header>
+
+<div class="input-section">
+  <div class="input-card">
+    <textarea id="ideaInput" placeholder="Was ist deine Idee?" rows="3"></textarea>
+    <div class="input-controls">
+      <select class="author-select" id="authorSelect">
+        <option value="Thomas">Thomas</option>
+        <option value="Desiree">Desiree</option>
+      </select>
+      <button class="btn btn-voice" id="voiceBtn" onclick="toggleVoice()" title="Spracheingabe">🎤</button>
+      <button class="btn btn-primary" onclick="addIdea()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-chip active" data-filter="alle" onclick="setFilter('alle',this)">Alle</button>
+  <button class="filter-chip" data-filter="offen" onclick="setFilter('offen',this)">🔴 Offen</button>
+  <button class="filter-chip" data-filter="in Bearbeitung" onclick="setFilter('in Bearbeitung',this)">🟡 In Bearbeitung</button>
+  <button class="filter-chip" data-filter="erledigt" onclick="setFilter('erledigt',this)">🟢 Erledigt</button>
+  <div class="filter-divider"></div>
+  <button class="filter-chip author-chip active" data-author="alle" onclick="setAuthorFilter('alle',this)">Beide</button>
+  <button class="filter-chip author-chip" data-author="Thomas" onclick="setAuthorFilter('Thomas',this)">Thomas</button>
+  <button class="filter-chip author-chip" data-author="Desiree" onclick="setAuthorFilter('Desiree',this)">Desiree</button>
+</div>
+
+<div class="ideas-list" id="ideasList">
+  <div class="empty-state" id="emptyState">
+    <div class="icon">💡</div>
+    <p>Noch keine Ideen vorhanden.<br>Füge deine erste Idee hinzu!</p>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>✏️ Idee bearbeiten</h2>
+    <div class="status-select-group" id="editStatusGroup">
+      <div class="status-option offen" data-status="offen" onclick="selectEditStatus('offen')">🔴 Offen</div>
+      <div class="status-option in-bearbeitung" data-status="in Bearbeitung" onclick="selectEditStatus('in Bearbeitung')">🟡 In Bearb.</div>
+      <div class="status-option erledigt" data-status="erledigt" onclick="selectEditStatus('erledigt')">🟢 Erledigt</div>
+    </div>
+    <textarea id="editText" rows="4"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('editModal')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h2>🗑️ Idee löschen?</h2>
+    <p style="color:var(--text-secondary);margin-bottom:16px">Diese Idee wird unwiderruflich gelöscht.</p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('deleteModal')">Abbrechen</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>⚙️ Einstellungen</h2>
+    <label for="apiKeyInput">Claude API-Schlüssel</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+    <p class="hint">Wird lokal gespeichert. Benötigt für die KI-Auswertung.</p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('settingsModal')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBO3BwYiEnF0K86j49aooqenWGgBj5yCLY",
+  authDomain: "ideenapp-63691.firebaseapp.com",
+  projectId: "ideenapp-63691",
+  storageBucket: "ideenapp-63691.firebasestorage.app",
+  messagingSenderId: "797997840846",
+  appId: "1:797997840846:web:a6c32b1316d7972714539f"
+});
+
+const db = firebase.firestore();
+db.enablePersistence().catch(() => {});
+const ideasRef = db.collection('ideen');
+
+let currentFilter = 'alle';
+let currentAuthorFilter = 'alle';
+let editingId = null;
+let deletingId = null;
+let editStatus = 'offen';
+let recognition = null;
+let isRecording = false;
+
+// --- PWA Manifest ---
+const manifest = {
+  name: "IdeenApp",
+  short_name: "Ideen",
+  description: "Ideen sammeln und verwalten",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#f3f4f6",
+  theme_color: "#667eea",
+  icons: [{
+    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23667eea'/%3E%3Ctext x='256' y='340' font-size='300' text-anchor='middle'%3E%F0%9F%92%A1%3C/text%3E%3C/svg%3E",
+    sizes: "512x512",
+    type: "image/svg+xml",
+    purpose: "any maskable"
+  }]
+};
+const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+const mLink = document.createElement('link');
+mLink.rel = 'manifest';
+mLink.href = URL.createObjectURL(mBlob);
+document.head.appendChild(mLink);
+
+// --- Toast ---
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// --- Modal helpers ---
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+
+// --- Filter ---
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip:not(.author-chip)').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderIdeas();
+}
+function setAuthorFilter(a, el) {
+  currentAuthorFilter = a;
+  document.querySelectorAll('.author-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderIdeas();
+}
+
+// --- Ideas state ---
+let ideas = [];
+
+ideasRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+  ideas = [];
+  snapshot.forEach(doc => ideas.push({ id: doc.id, ...doc.data() }));
+  renderIdeas();
+}, err => {
+  console.error('Firestore error:', err);
+  showToast('Verbindungsfehler', 'error');
+});
+
+function renderIdeas() {
+  const list = document.getElementById('ideasList');
+  const filtered = ideas.filter(i => {
+    if (currentFilter !== 'alle' && i.status !== currentFilter) return false;
+    if (currentAuthorFilter !== 'alle' && i.author !== currentAuthorFilter) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">${ideas.length === 0 ? '💡' : '🔍'}</div><p>${ideas.length === 0 ? 'Noch keine Ideen vorhanden.<br>Füge deine erste Idee hinzu!' : 'Keine Ideen für diesen Filter.'}</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(idea => {
+    const date = idea.createdAt ? new Date(idea.createdAt.seconds * 1000).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const statusClass = idea.status === 'in Bearbeitung' ? 'in-bearbeitung' : idea.status;
+    const evalHtml = idea.evaluation ? `
+      <div class="evaluation">
+        <button class="close-eval" onclick="clearEvaluation('${idea.id}')" title="Auswertung entfernen">✕</button>
+        <div class="evaluation-header">🤖 Claude Auswertung</div>
+        ${escapeHtml(idea.evaluation)}
+      </div>` : '';
+
+    return `
+      <div class="idea-card" data-status="${idea.status}">
+        <div class="idea-text">${escapeHtml(idea.text)}</div>
+        <div class="idea-meta">
+          <span class="idea-author">${escapeHtml(idea.author)}</span>
+          <span>·</span>
+          <span>${date}</span>
+          <span class="status-badge ${statusClass}">${idea.status === 'offen' ? '🔴' : idea.status === 'in Bearbeitung' ? '🟡' : '🟢'} ${idea.status}</span>
+        </div>
+        <div class="idea-actions">
+          <button class="btn" onclick="cycleStatus('${idea.id}','${idea.status}')">↻ Status</button>
+          <button class="btn" onclick="openEdit('${idea.id}')">✏️ Bearbeiten</button>
+          <button class="btn btn-ai" id="ai-${idea.id}" onclick="evaluateIdea('${idea.id}')">🤖 Auswerten</button>
+          <button class="btn btn-delete" onclick="openDelete('${idea.id}')">🗑️</button>
+        </div>
+        ${evalHtml}
+      </div>`;
+  }).join('');
+}
+
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
+// --- CRUD ---
+async function addIdea() {
+  const text = document.getElementById('ideaInput').value.trim();
+  if (!text) { showToast('Bitte eine Idee eingeben', 'error'); return; }
+  const author = document.getElementById('authorSelect').value;
+  try {
+    await ideasRef.add({
+      text,
+      author,
+      status: 'offen',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      evaluation: ''
+    });
+    document.getElementById('ideaInput').value = '';
+    showToast('Idee hinzugefügt!', 'success');
+  } catch (e) {
+    showToast('Fehler beim Speichern', 'error');
+  }
+}
+
+document.getElementById('ideaInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addIdea();
+});
+
+async function cycleStatus(id, current) {
+  const order = ['offen', 'in Bearbeitung', 'erledigt'];
+  const next = order[(order.indexOf(current) + 1) % 3];
+  try {
+    await ideasRef.doc(id).update({ status: next });
+    showToast(`Status: ${next}`, 'success');
+  } catch (e) {
+    showToast('Fehler beim Aktualisieren', 'error');
+  }
+}
+
+function openEdit(id) {
+  const idea = ideas.find(i => i.id === id);
+  if (!idea) return;
+  editingId = id;
+  document.getElementById('editText').value = idea.text;
+  editStatus = idea.status;
+  updateEditStatusUI();
+  openModal('editModal');
+}
+
+function selectEditStatus(s) {
+  editStatus = s;
+  updateEditStatusUI();
+}
+
+function updateEditStatusUI() {
+  document.querySelectorAll('#editStatusGroup .status-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.status === editStatus);
+  });
+}
+
+async function saveEdit() {
+  const text = document.getElementById('editText').value.trim();
+  if (!text) { showToast('Text darf nicht leer sein', 'error'); return; }
+  try {
+    await ideasRef.doc(editingId).update({ text, status: editStatus });
+    closeModal('editModal');
+    showToast('Idee aktualisiert!', 'success');
+  } catch (e) {
+    showToast('Fehler beim Speichern', 'error');
+  }
+}
+
+function openDelete(id) {
+  deletingId = id;
+  openModal('deleteModal');
+}
+
+async function confirmDelete() {
+  try {
+    await ideasRef.doc(deletingId).delete();
+    closeModal('deleteModal');
+    showToast('Idee gelöscht', 'success');
+  } catch (e) {
+    showToast('Fehler beim Löschen', 'error');
+  }
+}
+
+// --- Voice ---
+function toggleVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Spracheingabe nicht unterstützt', 'error'); return; }
+
+  if (isRecording && recognition) {
+    recognition.stop();
+    return;
+  }
+
+  recognition = new SR();
+  recognition.lang = 'de-DE';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('voiceBtn').classList.add('recording');
+  };
+
+  recognition.onresult = e => {
+    const text = e.results[0][0].transcript;
+    const input = document.getElementById('ideaInput');
+    input.value = input.value ? input.value + ' ' + text : text;
+    showToast('Sprache erkannt!', 'success');
+  };
+
+  recognition.onerror = e => {
+    if (e.error !== 'aborted') showToast('Sprachfehler: ' + e.error, 'error');
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('voiceBtn').classList.remove('recording');
+  };
+
+  recognition.start();
+}
+
+// --- Claude API ---
+async function evaluateIdea(id) {
+  const apiKey = localStorage.getItem('claude_api_key');
+  if (!apiKey) {
+    showToast('Bitte API-Schlüssel in Einstellungen hinterlegen', 'error');
+    openSettings();
+    return;
+  }
+
+  const idea = ideas.find(i => i.id === id);
+  if (!idea) return;
+
+  const btn = document.getElementById('ai-' + id);
+  if (btn) { btn.classList.add('loading'); btn.textContent = '⏳ Lädt...'; }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: `Analysiere und bewerte kurz und prägnant die folgende Idee. Gib eine Einschätzung zu Machbarkeit, Potenzial und schlage konkrete nächste Schritte vor. Antworte auf Deutsch.\n\nIdee: "${idea.text}"\nAutor: ${idea.author}\nStatus: ${idea.status}`
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const evaluation = data.content?.[0]?.text || 'Keine Antwort erhalten.';
+    await ideasRef.doc(id).update({ evaluation });
+    showToast('Auswertung erhalten!', 'success');
+  } catch (e) {
+    showToast('KI-Fehler: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.textContent = '🤖 Auswerten'; }
+  }
+}
+
+async function clearEvaluation(id) {
+  try {
+    await ideasRef.doc(id).update({ evaluation: '' });
+  } catch (e) {
+    showToast('Fehler', 'error');
+  }
+}
+
+// --- Settings ---
+function openSettings() {
+  document.getElementById('apiKeyInput').value = localStorage.getItem('claude_api_key') || '';
+  openModal('settingsModal');
+}
+
+function saveSettings() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) localStorage.setItem('claude_api_key', key);
+  else localStorage.removeItem('claude_api_key');
+  closeModal('settingsModal');
+  showToast('Einstellungen gespeichert', 'success');
+}
+</script>
+</body>
+</html>
