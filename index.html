@@ -102,7 +102,13 @@ header h1{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8
 <header>
   <div class="top">
     <h1>💡 IdeenApp</h1>
-    <button class="settings-btn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+    <div style="display:flex;gap:8px">
+      <button class="settings-btn" id="notifBtn" onclick="activateNotifications()" title="Benachrichtigungen">🔔</button>
+      <button class="settings-btn" onclick="openSettings()" title="Einstellungen">⚙️</button>
+    </div>
+  </div>
+  <div id="notifBanner" style="display:none;background:rgba(255,255,255,.15);margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;cursor:pointer;text-align:center" onclick="activateNotifications()">
+    🔔 Tippe hier, um Benachrichtigungen zu aktivieren
   </div>
 </header>
 
@@ -259,20 +265,55 @@ function setAuthorFilter(a, el) {
 }
 
 // --- Notifications ---
-let notificationsReady = false;
+function activateNotifications() {
+  if (!('Notification' in window)) {
+    showToast('Benachrichtigungen werden nicht unterstützt', 'error');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    showToast('Benachrichtigungen sind bereits aktiv!', 'success');
+    updateNotifUI();
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    showToast('Benachrichtigungen wurden blockiert – bitte in den Geräte-Einstellungen erlauben', 'error');
+    return;
+  }
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') {
+      showToast('Benachrichtigungen aktiviert!', 'success');
+      new Notification('💡 IdeenApp', { body: 'Du wirst jetzt über neue Ideen benachrichtigt!' });
+    } else {
+      showToast('Benachrichtigungen wurden abgelehnt', 'error');
+    }
+    updateNotifUI();
+  });
+}
 
-function requestNotifications() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+function updateNotifUI() {
+  const btn = document.getElementById('notifBtn');
+  const banner = document.getElementById('notifBanner');
+  if (!('Notification' in window)) { banner.style.display = 'none'; return; }
+  if (Notification.permission === 'granted') {
+    btn.style.opacity = '1';
+    banner.style.display = 'none';
+  } else if (Notification.permission === 'default') {
+    btn.style.opacity = '.6';
+    banner.style.display = 'block';
+  } else {
+    btn.style.opacity = '.4';
+    banner.style.display = 'none';
   }
 }
 
 function sendNotification(title, body) {
   if ('Notification' in window && Notification.permission === 'granted') {
-    const n = new Notification(title, { body, icon: '💡', tag: 'ideenapp-' + Date.now() });
+    const n = new Notification(title, { body, tag: 'ideenapp-' + Date.now() });
     n.onclick = () => { window.focus(); n.close(); };
   }
 }
+
+updateNotifUI();
 
 // --- Ideas state ---
 let ideas = [];
@@ -299,7 +340,6 @@ ideasRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
   showToast('Verbindungsfehler', 'error');
 });
 
-requestNotifications();
 
 function renderIdeas() {
   const list = document.getElementById('ideasList');
