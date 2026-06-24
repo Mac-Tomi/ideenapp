@@ -258,17 +258,48 @@ function setAuthorFilter(a, el) {
   renderIdeas();
 }
 
+// --- Notifications ---
+let notificationsReady = false;
+
+function requestNotifications() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const n = new Notification(title, { body, icon: '💡', tag: 'ideenapp-' + Date.now() });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+}
+
 // --- Ideas state ---
 let ideas = [];
+let initialLoad = true;
 
 ideasRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+  if (!initialLoad) {
+    const myAuthor = document.getElementById('authorSelect').value;
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const d = change.doc.data();
+        if (d.author && d.author !== myAuthor) {
+          sendNotification(`💡 Neue Idee von ${d.author}`, d.text);
+        }
+      }
+    });
+  }
   ideas = [];
   snapshot.forEach(doc => ideas.push({ id: doc.id, ...doc.data() }));
   renderIdeas();
+  initialLoad = false;
 }, err => {
   console.error('Firestore error:', err);
   showToast('Verbindungsfehler', 'error');
 });
+
+requestNotifications();
 
 function renderIdeas() {
   const list = document.getElementById('ideasList');
