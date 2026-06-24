@@ -177,9 +177,14 @@ header h1{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <h2>⚙️ Einstellungen</h2>
-    <label for="apiKeyInput">Claude API-Schlüssel</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
-    <p class="hint">Wird lokal gespeichert. Benötigt für die KI-Auswertung.</p>
+    <label for="vapidKeyInput">VAPID Key (Push-Nachrichten)</label>
+    <input type="text" id="vapidKeyInput" placeholder="BHx...">
+    <p class="hint">Aus Firebase Console → Projekteinstellungen → Cloud Messaging → Web Push-Zertifikate</p>
+    <div style="margin-top:16px">
+      <label for="apiKeyInput">Claude API-Schlüssel</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+      <p class="hint">Wird lokal gespeichert. Benötigt für die KI-Auswertung.</p>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-cancel" onclick="closeModal('settingsModal')">Abbrechen</button>
       <button class="btn btn-primary" onclick="saveSettings()">Speichern</button>
@@ -191,6 +196,7 @@ header h1{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey: "AIzaSyBO3BwYiEnF0K86j49aooqenWGgBj5yCLY",
@@ -204,6 +210,32 @@ firebase.initializeApp({
 const db = firebase.firestore();
 db.enablePersistence().catch(() => {});
 const ideasRef = db.collection('ideen');
+
+// --- FCM Setup ---
+let fcmSupported = false;
+let messaging = null;
+const VAPID_KEY = localStorage.getItem('vapid_key') || '';
+
+async function setupFCM() {
+  if (!('serviceWorker' in navigator) || !VAPID_KEY) return;
+  try {
+    const sw = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+    if (token) {
+      fcmSupported = true;
+      const author = document.getElementById('authorSelect').value;
+      const existing = await db.collection('fcm_tokens').where('token', '==', token).get();
+      if (existing.empty) {
+        await db.collection('fcm_tokens').add({ token, author, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      } else {
+        await existing.docs[0].ref.update({ author });
+      }
+    }
+  } catch (e) { console.log('FCM setup:', e.message); }
+}
+
+document.getElementById('authorSelect').addEventListener('change', () => { if (fcmSupported) setupFCM(); });
 
 let currentFilter = 'alle';
 let currentAuthorFilter = 'alle';
@@ -283,6 +315,7 @@ function activateNotifications() {
     if (p === 'granted') {
       showToast('Benachrichtigungen aktiviert!', 'success');
       new Notification('💡 IdeenApp', { body: 'Du wirst jetzt über neue Ideen benachrichtigt!' });
+      setupFCM();
     } else {
       showToast('Benachrichtigungen wurden abgelehnt', 'error');
     }
@@ -573,6 +606,7 @@ async function clearEvaluation(id) {
 // --- Settings ---
 function openSettings() {
   document.getElementById('apiKeyInput').value = localStorage.getItem('claude_api_key') || '';
+  document.getElementById('vapidKeyInput').value = localStorage.getItem('vapid_key') || '';
   openModal('settingsModal');
 }
 
@@ -580,9 +614,19 @@ function saveSettings() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (key) localStorage.setItem('claude_api_key', key);
   else localStorage.removeItem('claude_api_key');
+
+  const vapid = document.getElementById('vapidKeyInput').value.trim();
+  const oldVapid = localStorage.getItem('vapid_key') || '';
+  if (vapid) localStorage.setItem('vapid_key', vapid);
+  else localStorage.removeItem('vapid_key');
+
   closeModal('settingsModal');
   showToast('Einstellungen gespeichert', 'success');
+
+  if (vapid && vapid !== oldVapid) location.reload();
 }
+
+if (Notification.permission === 'granted' && VAPID_KEY) setupFCM();
 </script>
 </body>
 </html>
