@@ -1,8 +1,10 @@
 {
+  "id": "/ideenapp/",
   "name": "IdeenApp",
   "short_name": "IdeenApp",
   "description": "Ideen sammeln und verwalten",
-  "start_url": "./index.html",
+  "start_url": "/ideenapp/",
+  "scope": "/ideenapp/",
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#667eea",
