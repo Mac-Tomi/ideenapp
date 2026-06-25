@@ -192,6 +192,7 @@ header h1{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey: "AIzaSyBO3BwYiEnF0K86j49aooqenWGgBj5yCLY",
@@ -206,34 +207,37 @@ const db = firebase.firestore();
 db.enablePersistence().catch(() => {});
 const ideasRef = db.collection('ideen');
 
-// --- Service Worker ---
+// --- FCM Push Notifications ---
+const VAPID_KEY = 'BPqR2UbMjTD_4gtqstxF42c_n2INl6FQXDudNjin3vwRy2My3DnStEAbBfgnzPD_w1KB_KL35WgA96AnU7Dzw2Y';
 let swReg = null;
+let messaging = null;
+
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    // Unregister old FCM service worker
-    const regs = await navigator.serviceWorker.getRegistrations();
-    for (const r of regs) {
-      if (r.active?.scriptURL?.includes('firebase-messaging-sw')) await r.unregister();
-    }
-    swReg = await navigator.serviceWorker.register('sw.js');
-    // Tell SW which author I am
-    const author = document.getElementById('authorSelect').value;
-    swReg.active?.postMessage({ type: 'SET_AUTHOR', author });
-    navigator.serviceWorker.ready.then(reg => {
-      reg.active.postMessage({ type: 'SET_AUTHOR', author });
-      // Periodic background sync (Chromium, best-effort)
-      if ('periodicSync' in reg) {
-        reg.periodicSync.register('check-ideas', { minInterval: 15 * 60 * 1000 }).catch(() => {});
-      }
-    });
+    swReg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    messaging = firebase.messaging();
   } catch (e) { console.log('SW:', e.message); }
 }
 registerSW();
 
+async function registerFCMToken() {
+  if (!messaging || !swReg) return;
+  try {
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!token) return;
+    const author = document.getElementById('authorSelect').value;
+    const existing = await db.collection('fcm_tokens').where('token', '==', token).get();
+    if (existing.empty) {
+      await db.collection('fcm_tokens').add({ token, author, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } else {
+      await existing.docs[0].ref.update({ author });
+    }
+  } catch (e) { console.log('FCM token:', e.message); }
+}
+
 document.getElementById('authorSelect').addEventListener('change', () => {
-  const author = document.getElementById('authorSelect').value;
-  if (swReg?.active) swReg.active.postMessage({ type: 'SET_AUTHOR', author });
+  registerFCMToken();
 });
 
 let currentFilter = 'alle';
@@ -293,6 +297,7 @@ function activateNotifications() {
     if (p === 'granted') {
       showToast('Benachrichtigungen aktiviert!', 'success');
       if (swReg) swReg.showNotification('💡 IdeenApp', { body: 'Du wirst jetzt über neue Ideen benachrichtigt!' });
+      registerFCMToken();
     } else {
       showToast('Benachrichtigungen wurden abgelehnt', 'error');
     }
@@ -593,6 +598,8 @@ function saveSettings() {
   closeModal('settingsModal');
   showToast('Einstellungen gespeichert', 'success');
 }
+
+if (Notification.permission === 'granted') registerFCMToken();
 </script>
 </body>
 </html>
