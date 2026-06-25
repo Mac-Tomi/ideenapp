@@ -214,7 +214,7 @@ const ideasRef = db.collection('ideen');
 // --- FCM Setup ---
 let fcmSupported = false;
 let messaging = null;
-const VAPID_KEY = localStorage.getItem('vapid_key') || '';
+const VAPID_KEY = localStorage.getItem('vapid_key') || 'BPqR2UbMjTD_4gtqstxF42c_n2INl6FQXDudNjin3vwRy2My3DnStEAbBfgnzPD_w1KB_KL35WgA96AnU7Dzw2Y';
 
 async function setupFCM() {
   if (!('serviceWorker' in navigator) || !VAPID_KEY) return;
